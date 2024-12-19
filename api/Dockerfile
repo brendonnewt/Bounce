@@ -27,8 +27,8 @@ WORKDIR /app
 # Copy the compiled application binary from the builder stage
 COPY --from=builder /app/target/release/api /usr/local/bin/api
 
-# Set environment variable for the database location
-ENV DATABASE_URL="sqlite:/app/bounce.db"
+# Copy the .env file into the container
+COPY .env /app/.env
 
 # Expose the port your application is listening on
 EXPOSE 8080
