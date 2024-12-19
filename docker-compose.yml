@@ -1,0 +1,22 @@
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: ./api
+    ports:
+      - "8080:8080"  # Expose the API on port 8080
+    volumes:
+      - ./api/db:/app/db  # Mount the local 'db' folder to persist SQLite data
+    environment:
+      DATABASE_URL: "sqlite:/app/db/bounce.db"  # Path to the SQLite database
+    #depends_on:
+      #- frontend
+
+  #frontend:
+    #build: ./frontend
+    #ports:
+      #- "3000:80"  # Expose frontend on port 3000
+
+volumes:
+  db-data:  # Create a named volume for persistent SQLite storage
