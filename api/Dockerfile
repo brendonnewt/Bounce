@@ -7,9 +7,6 @@ WORKDIR /app
 # Copy the Cargo.toml and Cargo.lock files
 COPY Cargo.toml Cargo.lock ./
 
-# Build the dependencies (this helps caching them)
-RUN cargo build --release
-
 # Copy the entire project into the container
 COPY . .
 
@@ -17,7 +14,7 @@ COPY . .
 RUN cargo build --release
 
 # Use a minimal base image for the final image
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 # Install necessary dependencies (for SQLite support)
 RUN apt-get update && apt-get install -y \
