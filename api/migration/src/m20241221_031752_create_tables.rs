@@ -72,9 +72,6 @@ async fn create_athlete_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> 
                 .if_not_exists()
                 .col(pk_auto(Athlete::AthleteId))
                 .col(integer(Athlete::ClubId).null())
-                .col(integer(Athlete::TraLvl))
-                .col(integer(Athlete::DmtLvl))
-                .col(integer(Athlete::TumLvl))
                 .foreign_key(
                     ForeignKey::create()
                         .name("fk-athlete-club_id")
@@ -266,9 +263,6 @@ enum Athlete {
     Table,
     AthleteId,
     ClubId,
-    TraLvl,
-    DmtLvl,
-    TumLvl,
 }
 
 #[derive(DeriveIden)]
