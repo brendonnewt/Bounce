@@ -2,6 +2,7 @@ use actix_web::{middleware::Logger, web, App, HttpServer};
 use sea_orm::{Database, DatabaseConnection};
 use utils::app_state::AppState;
 
+mod entities;
 mod routes;
 mod utils;
 
