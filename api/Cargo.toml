@@ -11,6 +11,8 @@ lazy_static = "1.5.0" # For setting up constants
 sea-orm = { version = "1.1.0", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ] }
 serde = { version = "1.0.216", features = ["derive"] } # For JSON serialization
 serde_json = "1.0.133" # For working with JSON
+strum = "0.26.3"
+strum_macros = "0.26.4"
 tokio = { version = "1.42.0", features = ["full"] } # Async runtime compatible with Actix and SeaORM
 
 [[bin]]
