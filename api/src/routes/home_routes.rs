@@ -1,10 +1,10 @@
-use super::handlers;
+use super::controllers;
 use actix_web::web;
 
 pub fn config(config: &mut web::ServiceConfig) {
     config.service(
         web::scope("/home")
-            .service(handlers::home_handler::greet)
-            .service(handlers::home_handler::ping),
+            .service(controllers::home_handler::greet)
+            .service(controllers::home_handler::ping),
     );
 }

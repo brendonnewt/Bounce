@@ -1,2 +1,2 @@
-pub mod handlers;
+pub mod controllers;
 pub mod home_routes;

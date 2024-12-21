@@ -6,7 +6,7 @@ mod entities;
 mod routes;
 mod utils;
 
-#[actix_web::main] // or #[tokio::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Setting up logger
     if std::env::var_os("RUST_LOG").is_none() {
@@ -22,6 +22,7 @@ async fn main() -> std::io::Result<()> {
     let address = utils::constants::ADDRESS.clone();
     let db_url = utils::constants::DATABASE_URL.clone();
 
+    // Establish database connection
     let db: DatabaseConnection = Database::connect(db_url.to_string())
         .await
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
