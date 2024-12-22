@@ -1,7 +1,9 @@
-pub mod auth_routes;
 pub mod controllers;
-pub mod home_routes;
 pub mod middleware;
+pub mod services;
+
+pub mod auth_routes;
+pub mod home_routes;
 pub mod user_routes;
 
 use actix_web::web;

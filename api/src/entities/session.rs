@@ -7,6 +7,7 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub session_id: i32,
+    pub user_id: i32,
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub event_id: String,
     pub time_start: DateTime,
@@ -17,11 +18,25 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(has_many = "super::turn::Entity")]
     Turn,
+    #[sea_orm(
+        belongs_to = "super::user::Entity",
+        from = "Column::UserId",
+        to = "super::user::Column::UserId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    User,
 }
 
 impl Related<super::turn::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Turn.def()
+    }
+}
+
+impl Related<super::user::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::User.def()
     }
 }
 

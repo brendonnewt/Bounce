@@ -2,9 +2,7 @@
 
 pub mod prelude;
 
-pub mod athlete;
 pub mod club;
-pub mod coach;
 pub mod session;
 pub mod skill;
 pub mod turn;

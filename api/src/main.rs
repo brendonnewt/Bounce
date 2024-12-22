@@ -1,14 +1,23 @@
-use actix_web::{middleware::Logger, web, App, HttpServer};
+use actix_web::{middleware::Logger, web, App, HttpResponse, HttpServer, Responder};
 use sea_orm::{Database, DatabaseConnection};
+use serde::{Deserialize, Serialize};
 use utils::app_state::AppState;
 
 mod entities;
 mod routes;
 mod utils;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct MainError {
     pub message: String,
+}
+
+impl Responder for MainError {
+    type Body = actix_web::body::BoxBody;
+
+    fn respond_to(self, _req: &actix_web::HttpRequest) -> HttpResponse<Self::Body> {
+        HttpResponse::InternalServerError().json(self)
+    }
 }
 
 #[actix_web::main]

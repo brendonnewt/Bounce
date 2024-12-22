@@ -8,8 +8,6 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         create_user_table(manager).await?;
         create_club_table(manager).await?;
-        create_athlete_table(manager).await?;
-        create_coach_table(manager).await?;
         create_session_table(manager).await?;
         create_turn_table(manager).await?;
         create_skill_table(manager).await
@@ -19,8 +17,6 @@ impl MigrationTrait for Migration {
         drop_skill_table(manager).await?;
         drop_turn_table(manager).await?;
         drop_session_table(manager).await?;
-        drop_coach_table(manager).await?;
-        drop_athlete_table(manager).await?;
         drop_club_table(manager).await?;
         drop_user_table(manager).await
     }
@@ -66,44 +62,6 @@ async fn create_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
         .await
 }
 
-async fn create_athlete_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .create_table(
-            Table::create()
-                .table(Athlete::Table)
-                .if_not_exists()
-                .col(pk_auto(Athlete::AthleteId))
-                .col(integer(Athlete::ClubId).null())
-                .foreign_key(
-                    ForeignKey::create()
-                        .name("fk-athlete-club_id")
-                        .from(Athlete::Table, Athlete::ClubId)
-                        .to(Club::Table, Club::ClubId),
-                )
-                .to_owned(),
-        )
-        .await
-}
-
-async fn create_coach_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .create_table(
-            Table::create()
-                .table(Coach::Table)
-                .if_not_exists()
-                .col(pk_auto(Coach::CoachId))
-                .col(integer(Coach::ClubId).null())
-                .foreign_key(
-                    ForeignKey::create()
-                        .name("fk-coach-club_id")
-                        .from(Coach::Table, Coach::ClubId)
-                        .to(Club::Table, Club::ClubId),
-                )
-                .to_owned(),
-        )
-        .await
-}
-
 async fn create_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     manager
         .create_table(
@@ -111,6 +69,7 @@ async fn create_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> 
                 .table(Session::Table)
                 .if_not_exists()
                 .col(pk_auto(Session::SessionId))
+                .col(integer(Session::UserId))
                 .col(
                     ColumnDef::new(Session::EventId)
                         .enumeration(Event::Table, vec![Event::TRA, Event::DMT, Event::TUM])
@@ -118,6 +77,12 @@ async fn create_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> 
                 )
                 .col(date_time(Session::TimeStart))
                 .col(date_time(Session::TimeEnd))
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("fk-turn-user_id")
+                        .from(Session::Table, Session::UserId)
+                        .to(User::Table, User::UserId),
+                )
                 .to_owned(),
         )
         .await
@@ -131,7 +96,7 @@ async fn create_turn_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 .if_not_exists()
                 .col(pk_auto(Turn::TurnId))
                 .col(integer(Turn::SessionId))
-                .col(integer(Turn::AthleteId))
+                .col(integer(Turn::UserId))
                 .col(
                     ColumnDef::new(Turn::EventId)
                         .enumeration(Event::Table, vec![Event::TRA, Event::DMT, Event::TUM])
@@ -146,9 +111,9 @@ async fn create_turn_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 )
                 .foreign_key(
                     ForeignKey::create()
-                        .name("fk-turn-athlete_id")
-                        .from(Turn::Table, Turn::AthleteId)
-                        .to(Athlete::Table, Athlete::AthleteId),
+                        .name("fk-turn-user_id")
+                        .from(Turn::Table, Turn::UserId)
+                        .to(User::Table, User::UserId),
                 )
                 .to_owned(),
         )
@@ -207,18 +172,6 @@ async fn drop_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
         .await
 }
 
-async fn drop_athlete_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .drop_table(Table::drop().table(Athlete::Table).to_owned())
-        .await
-}
-
-async fn drop_coach_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .drop_table(Table::drop().table(Coach::Table).to_owned())
-        .await
-}
-
 async fn drop_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     manager
         .drop_table(Table::drop().table(Session::Table).to_owned())
@@ -263,23 +216,10 @@ enum Club {
 }
 
 #[derive(DeriveIden)]
-enum Athlete {
-    Table,
-    AthleteId,
-    ClubId,
-}
-
-#[derive(DeriveIden)]
-enum Coach {
-    Table,
-    CoachId,
-    ClubId,
-}
-
-#[derive(DeriveIden)]
 enum Session {
     Table,
     SessionId,
+    UserId,
     EventId,
     TimeStart,
     TimeEnd,
@@ -290,7 +230,7 @@ enum Turn {
     Table,
     TurnId,
     SessionId,
-    AthleteId,
+    UserId,
     EventId,
     TotalDifficulty,
 }

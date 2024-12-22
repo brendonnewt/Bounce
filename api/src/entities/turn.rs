@@ -8,7 +8,7 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub turn_id: i32,
     pub session_id: i32,
-    pub athlete_id: i32,
+    pub user_id: i32,
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub event_id: String,
     #[sea_orm(column_type = "Float")]
@@ -17,14 +17,6 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::athlete::Entity",
-        from = "Column::AthleteId",
-        to = "super::athlete::Column::AthleteId",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Athlete,
     #[sea_orm(
         belongs_to = "super::session::Entity",
         from = "Column::SessionId",
@@ -35,12 +27,14 @@ pub enum Relation {
     Session,
     #[sea_orm(has_many = "super::skill::Entity")]
     Skill,
-}
-
-impl Related<super::athlete::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Athlete.def()
-    }
+    #[sea_orm(
+        belongs_to = "super::user::Entity",
+        from = "Column::UserId",
+        to = "super::user::Column::UserId",
+        on_update = "NoAction",
+        on_delete = "NoAction"
+    )]
+    User,
 }
 
 impl Related<super::session::Entity> for Entity {
@@ -52,6 +46,12 @@ impl Related<super::session::Entity> for Entity {
 impl Related<super::skill::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Skill.def()
+    }
+}
+
+impl Related<super::user::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::User.def()
     }
 }
 
