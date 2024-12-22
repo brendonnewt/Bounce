@@ -5,7 +5,7 @@ use sha256::digest;
 
 use crate::{
     entities,
-    utils::{api_response, app_state},
+    utils::{api_response, app_state, jwt::encode_jwt},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -61,5 +61,9 @@ pub async fn login(
         return api_response::ApiResponse::new(401, "User not found".to_string());
     }
 
-    api_response::ApiResponse::new(200, user.unwrap().name_first)
+    let user_data = user.unwrap();
+
+    let token = encode_jwt(user_data.email, user_data.user_id).unwrap();
+
+    api_response::ApiResponse::new(200, format!("{{ 'token': {}}}", token))
 }
