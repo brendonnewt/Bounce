@@ -39,7 +39,9 @@ async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 .table(User::Table)
                 .if_not_exists()
                 .col(pk_auto(User::UserId))
-                .col(string(User::Username))
+                .col(string(User::NameFirst))
+                .col(string(User::NameLast))
+                .col(string(User::Email))
                 .col(string(User::Password))
                 .col(
                     ColumnDef::new(User::UserType)
@@ -239,7 +241,9 @@ async fn drop_skill_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
 enum User {
     Table,
     UserId,
-    Username,
+    NameFirst,
+    NameLast,
+    Email,
     Password,
     UserType,
 }

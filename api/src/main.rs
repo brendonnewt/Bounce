@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(AppState { db: db.clone() }))
             .wrap(Logger::default()) // Logger middleware
-            .configure(routes::home_routes::config) // Configure routes
+            .configure(routes::config) // Configure routes
     })
     .bind((address, port))?
     .run()

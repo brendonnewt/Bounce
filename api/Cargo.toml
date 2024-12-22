@@ -5,12 +5,15 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4.9.0" # For building the API
+chrono = "0.4.39"
 dotenv = "0.15.0" # For loading environment variables
 env_logger = "0.11.6" # For logging
+jsonwebtoken = "9.3.0"
 lazy_static = "1.5.0" # For setting up constants
 sea-orm = { version = "1.1.0", features = [ "sqlx-sqlite", "runtime-tokio-rustls", "macros" ] }
 serde = { version = "1.0.216", features = ["derive"] } # For JSON serialization
 serde_json = "1.0.133" # For working with JSON
+sha256 = "1.5.0"
 strum = "0.26.3"
 strum_macros = "0.26.4"
 tokio = { version = "1.42.0", features = ["full"] } # Async runtime compatible with Actix and SeaORM
