@@ -1,10 +1,10 @@
-use super::controllers;
-use actix_web::web;
+use super::{controllers, middleware};
+use actix_web::{middleware::from_fn, web};
 
 pub fn config(config: &mut web::ServiceConfig) {
     config.service(
-        web::scope("/users")
-            .service(controllers::user_controller::greet)
-            .service(controllers::user_controller::ping),
+        web::scope("/user")
+            .wrap(from_fn(middleware::auth_middleware::check_auth_middleware))
+            .service(controllers::user_controller::user),
     );
 }

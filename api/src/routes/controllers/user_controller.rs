@@ -1,13 +1,8 @@
 use actix_web::{get, web, Responder};
 
-use crate::utils::api_response;
+use crate::utils::{api_response, app_state};
 
-#[get("/hello/{name}")]
-pub async fn greet(name: web::Path<String>) -> impl Responder {
-    api_response::ApiResponse::new(200, format!("Hello {name}!"))
-}
-
-#[get("/ping")]
-pub async fn ping() -> impl Responder {
-    api_response::ApiResponse::new(200, "Pong!".to_string())
+#[get("")]
+pub async fn user(app_state: web::Data<app_state::AppState>) -> impl Responder {
+    api_response::ApiResponse::new(200, "Welcome!".to_string())
 }
