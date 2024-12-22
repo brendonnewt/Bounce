@@ -6,8 +6,13 @@ mod entities;
 mod routes;
 mod utils;
 
+#[derive(Debug)]
+struct MainError {
+    pub message: String,
+}
+
 #[actix_web::main]
-async fn main() -> std::io::Result<()> {
+async fn main() -> Result<(), MainError> {
     // Setting up logger
     if std::env::var_os("RUST_LOG").is_none() {
         std::env::set_var("RUST_LOG", "actix_web=info");
@@ -23,9 +28,9 @@ async fn main() -> std::io::Result<()> {
     let db_url = utils::constants::DATABASE_URL.clone();
 
     // Establish database connection
-    let db: DatabaseConnection = Database::connect(db_url.to_string())
-        .await
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+    let db: DatabaseConnection = Database::connect(db_url).await.map_err(|err| MainError {
+        message: err.to_string(),
+    })?;
 
     // Booting up web server
     HttpServer::new(move || {
@@ -34,7 +39,13 @@ async fn main() -> std::io::Result<()> {
             .wrap(Logger::default()) // Logger middleware
             .configure(routes::config) // Configure routes
     })
-    .bind((address, port))?
+    .bind((address, port))
+    .map_err(|err| MainError {
+        message: err.to_string(),
+    })?
     .run()
     .await
+    .map_err(|err| MainError {
+        message: err.to_string(),
+    })
 }

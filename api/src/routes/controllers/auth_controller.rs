@@ -1,11 +1,15 @@
-use actix_web::{post, web, Responder};
+use actix_web::{post, web};
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use serde::{Deserialize, Serialize};
 use sha256::digest;
 
 use crate::{
     entities,
-    utils::{api_response, app_state, jwt::encode_jwt},
+    utils::{
+        api_response::{self, ApiResponse},
+        app_state,
+        jwt::encode_jwt,
+    },
 };
 
 #[derive(Serialize, Deserialize)]
@@ -26,7 +30,7 @@ struct LoginModel {
 pub async fn register(
     app_state: web::Data<app_state::AppState>,
     json: web::Json<RegisterModel>,
-) -> impl Responder {
+) -> Result<ApiResponse, ApiResponse> {
     let user_model = entities::user::ActiveModel {
         name_first: Set(json.name_first.clone()),
         name_last: Set(json.name_last.clone()),
@@ -37,16 +41,20 @@ pub async fn register(
     }
     .insert(&app_state.db)
     .await
-    .unwrap();
+    .map_err(|err| ApiResponse::new(500, err.to_string()))?;
 
-    api_response::ApiResponse::new(200, format!("{}", user_model.user_id))
+    Ok(api_response::ApiResponse::new(
+        200,
+        format!("{}", user_model.user_id),
+    ))
 }
 
 #[post("login")]
 pub async fn login(
     app_state: web::Data<app_state::AppState>,
     json: web::Json<LoginModel>,
-) -> impl Responder {
+) -> Result<ApiResponse, ApiResponse> {
+    // Get the user
     let user = entities::user::Entity::find()
         .filter(
             Condition::all()
@@ -55,15 +63,15 @@ pub async fn login(
         )
         .one(&app_state.db)
         .await
-        .unwrap();
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?
+        .ok_or(ApiResponse::new(404, "User not found".to_string()))?;
 
-    if user.is_none() {
-        return api_response::ApiResponse::new(401, "User not found".to_string());
-    }
+    // Create the jwt token
+    let token = encode_jwt(user.email, user.user_id)
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?;
 
-    let user_data = user.unwrap();
-
-    let token = encode_jwt(user_data.email, user_data.user_id).unwrap();
-
-    api_response::ApiResponse::new(200, format!("{{ 'token': {}}}", token))
+    Ok(api_response::ApiResponse::new(
+        200,
+        format!("{{ 'token': {}}}", token),
+    ))
 }
