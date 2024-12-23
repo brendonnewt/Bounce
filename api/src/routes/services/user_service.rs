@@ -21,8 +21,17 @@ pub async fn update_user(
         .ok_or(ApiResponse::new(404, "User not found".to_string()))?
         .into_active_model();
 
-    user_model.name_first = Set(user_data.name_first.clone());
-    user_model.name_last = Set(user_data.name_last.clone());
+    if let Some(name_first) = &user_data.name_first {
+        user_model.name_first = Set(name_first.clone());
+    }
+
+    if let Some(name_last) = &user_data.name_last {
+        user_model.name_last = Set(name_last.clone());
+    }
+
+    if let Some(email) = &user_data.email {
+        user_model.email = Set(email.clone());
+    }
 
     user_model
         .update(&app_state.db)
