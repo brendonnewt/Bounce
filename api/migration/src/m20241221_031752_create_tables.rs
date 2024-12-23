@@ -6,8 +6,8 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        create_user_table(manager).await?;
         create_club_table(manager).await?;
+        create_user_table(manager).await?;
         create_session_table(manager).await?;
         create_turn_table(manager).await?;
         create_skill_table(manager).await
@@ -17,8 +17,8 @@ impl MigrationTrait for Migration {
         drop_skill_table(manager).await?;
         drop_turn_table(manager).await?;
         drop_session_table(manager).await?;
-        drop_club_table(manager).await?;
-        drop_user_table(manager).await
+        drop_user_table(manager).await?;
+        drop_club_table(manager).await
     }
 }
 
@@ -35,6 +35,7 @@ async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 .table(User::Table)
                 .if_not_exists()
                 .col(pk_auto(User::UserId))
+                .col(integer(User::ClubId).null())
                 .col(string(User::NameFirst))
                 .col(string(User::NameLast))
                 .col(string(User::Email))
@@ -43,6 +44,12 @@ async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                     ColumnDef::new(User::UserType)
                         .enumeration(UserType::Table, vec![UserType::Coach, UserType::Athlete])
                         .not_null(),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("fk-user-club_id")
+                        .from(User::Table, User::ClubId)
+                        .to(Club::Table, Club::ClubId),
                 )
                 .to_owned(),
         )
@@ -194,6 +201,7 @@ async fn drop_skill_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
 enum User {
     Table,
     UserId,
+    ClubId,
     NameFirst,
     NameLast,
     Email,
