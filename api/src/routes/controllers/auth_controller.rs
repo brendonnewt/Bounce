@@ -1,26 +1,13 @@
 use actix_web::{post, web};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     routes::services::auth_service,
-    utils::{api_response::ApiResponse, app_state},
+    utils::{
+        api_response::ApiResponse,
+        app_state,
+        request_models::auth_models::{LoginModel, RegisterModel},
+    },
 };
-
-#[derive(Serialize, Deserialize)]
-pub struct RegisterModel {
-    pub user_type: String,
-    pub name_first: String,
-    pub name_last: String,
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct LoginModel {
-    pub user_type: String,
-    pub email: String,
-    pub password: String,
-}
 
 #[post("register")]
 pub async fn register_athlete(

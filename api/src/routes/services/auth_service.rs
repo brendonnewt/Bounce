@@ -2,9 +2,12 @@ use actix_web::web;
 use sha256::digest;
 
 use crate::entities;
-use crate::routes::controllers::auth_controller::{LoginModel, RegisterModel};
-use crate::utils::jwt::encode_jwt;
-use crate::utils::{api_response::ApiResponse, app_state};
+use crate::utils::{
+    api_response::ApiResponse,
+    app_state,
+    jwt::encode_jwt,
+    request_models::auth_models::{LoginModel, RegisterModel},
+};
 
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 
