@@ -8,6 +8,7 @@ use crate::{
 
 #[derive(Serialize, Deserialize)]
 pub struct RegisterModel {
+    pub user_type: String,
     pub name_first: String,
     pub name_last: String,
     pub email: String,
@@ -16,16 +17,17 @@ pub struct RegisterModel {
 
 #[derive(Serialize, Deserialize)]
 pub struct LoginModel {
+    pub user_type: String,
     pub email: String,
     pub password: String,
 }
 
-#[post("register/athlete")]
+#[post("register")]
 pub async fn register_athlete(
     app_state: web::Data<app_state::AppState>,
     json: web::Json<RegisterModel>,
 ) -> Result<ApiResponse, ApiResponse> {
-    auth_service::register_athlete(app_state, json).await
+    auth_service::register(app_state, json).await
 }
 
 #[post("login")]
