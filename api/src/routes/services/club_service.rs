@@ -44,7 +44,7 @@ pub async fn create_club(
     // Ensure user trying to make club is a coach
     let filters = Some(
         Condition::all()
-            .add(entities::user::Column::Email.eq(claim_data.email.clone()))
+            .add(entities::user::Column::UserId.eq(claim_data.user_id))
             .add(entities::user::Column::UserType.eq("C".to_string())),
     );
 
@@ -87,6 +87,7 @@ pub async fn create_club(
     // Create and insert the club into the database
     let club_model = entities::club::ActiveModel {
         name: Set(json.name.clone()),
+        owner_id: Set(coach.user_id),
         ..Default::default()
     }
     .insert(&app_state.db)
