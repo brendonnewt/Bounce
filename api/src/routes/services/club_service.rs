@@ -10,6 +10,8 @@ use crate::{
     },
 };
 
+use super::club_member_services;
+
 pub async fn get_user_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -50,8 +52,7 @@ pub async fn create_club(
 
     let coach;
 
-    if let Some(found_coach) =
-        user_service::get_user(app_state.clone(), claim_data.clone(), filters).await
+    if let Some(found_coach) = user_service::get_user(&app_state, claim_data.clone(), filters).await
     {
         coach = found_coach;
     } else {
@@ -62,12 +63,7 @@ pub async fn create_club(
     }
 
     // Check if the coach is already a member of a club
-    if let Some(_) = entities::club_member::Entity::find()
-        .filter(entities::club_member::Column::UserId.eq(coach.user_id))
-        .one(&app_state.db)
-        .await
-        .map_err(|err| ApiResponse::new(500, err.to_string()))?
-    {
+    if let Some(_) = club_member_services::get_club_member(&app_state, claim_data, None).await {
         return Err(ApiResponse::new(409, "Users cannot be part of two clubs at once. Please leave the club the account is registered for before creating a new one".to_string()));
     }
 
@@ -86,7 +82,7 @@ pub async fn create_club(
 
     // Create and insert the club into the database
     let club_model = entities::club::ActiveModel {
-        name: Set(json.name.clone()),
+        name: Set(json.name.clone().to_lowercase()),
         owner_id: Set(coach.user_id),
         ..Default::default()
     }

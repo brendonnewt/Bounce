@@ -18,9 +18,9 @@ impl MigrationTrait for Migration {
         drop_skill_table(manager).await?;
         drop_turn_table(manager).await?;
         drop_session_table(manager).await?;
+        drop_club_member_table(manager).await?;
         drop_club_table(manager).await?;
-        drop_user_table(manager).await?;
-        drop_club_member_table(manager).await
+        drop_user_table(manager).await
     }
 }
 

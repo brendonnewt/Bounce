@@ -44,7 +44,7 @@ pub async fn update_user(
 }
 
 pub async fn get_user(
-    app_state: web::Data<app_state::AppState>,
+    app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
     filters: Option<Condition>,
 ) -> Option<entities::user::Model> {
