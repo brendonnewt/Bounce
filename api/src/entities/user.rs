@@ -7,7 +7,6 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key)]
     pub user_id: i32,
-    pub club_id: i32,
     pub name_first: String,
     pub name_last: String,
     pub email: String,
@@ -18,23 +17,17 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::club::Entity",
-        from = "Column::ClubId",
-        to = "super::club::Column::ClubId",
-        on_update = "NoAction",
-        on_delete = "NoAction"
-    )]
-    Club,
+    #[sea_orm(has_many = "super::club_member::Entity")]
+    ClubMember,
     #[sea_orm(has_many = "super::session::Entity")]
     Session,
     #[sea_orm(has_many = "super::turn::Entity")]
     Turn,
 }
 
-impl Related<super::club::Entity> for Entity {
+impl Related<super::club_member::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::Club.def()
+        Relation::ClubMember.def()
     }
 }
 

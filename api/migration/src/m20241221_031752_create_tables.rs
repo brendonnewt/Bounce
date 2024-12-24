@@ -8,6 +8,7 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         create_club_table(manager).await?;
         create_user_table(manager).await?;
+        create_club_member_table(manager).await?;
         create_session_table(manager).await?;
         create_turn_table(manager).await?;
         create_skill_table(manager).await
@@ -18,7 +19,8 @@ impl MigrationTrait for Migration {
         drop_turn_table(manager).await?;
         drop_session_table(manager).await?;
         drop_user_table(manager).await?;
-        drop_club_table(manager).await
+        drop_club_table(manager).await?;
+        drop_club_member_table(manager).await
     }
 }
 
@@ -26,34 +28,6 @@ impl MigrationName for Migration {
     fn name(&self) -> &str {
         "m20241221_031752_create_tables"
     }
-}
-
-async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .create_table(
-            Table::create()
-                .table(User::Table)
-                .if_not_exists()
-                .col(pk_auto(User::UserId))
-                .col(integer(User::ClubId).null())
-                .col(string(User::NameFirst))
-                .col(string(User::NameLast))
-                .col(string(User::Email))
-                .col(string(User::Password))
-                .col(
-                    ColumnDef::new(User::UserType)
-                        .enumeration(UserType::Table, vec![UserType::Coach, UserType::Athlete])
-                        .not_null(),
-                )
-                .foreign_key(
-                    ForeignKey::create()
-                        .name("fk-user-club_id")
-                        .from(User::Table, User::ClubId)
-                        .to(Club::Table, Club::ClubId),
-                )
-                .to_owned(),
-        )
-        .await
 }
 
 async fn create_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
@@ -64,6 +38,55 @@ async fn create_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 .if_not_exists()
                 .col(pk_auto(Club::ClubId))
                 .col(string(Club::Name))
+                .to_owned(),
+        )
+        .await
+}
+
+async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+    manager
+        .create_table(
+            Table::create()
+                .table(User::Table)
+                .if_not_exists()
+                .col(pk_auto(User::UserId))
+                .col(string(User::NameFirst))
+                .col(string(User::NameLast))
+                .col(string(User::Email))
+                .col(string(User::Password))
+                .col(
+                    ColumnDef::new(User::UserType)
+                        .enumeration(UserType::Table, vec![UserType::Coach, UserType::Athlete])
+                        .not_null(),
+                )
+                .to_owned(),
+        )
+        .await
+}
+
+async fn create_club_member_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+    manager
+        .create_table(
+            Table::create()
+                .table(ClubMember::Table)
+                .if_not_exists()
+                .col(pk_auto(ClubMember::ClubMemberId))
+                .col(integer(ClubMember::UserId))
+                .col(integer(ClubMember::ClubId))
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("fk-club_member-user_id")
+                        .from(ClubMember::Table, ClubMember::UserId)
+                        .to(User::Table, User::UserId)
+                        .on_delete(ForeignKeyAction::Cascade),
+                )
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("fk-club_member-club_id")
+                        .from(ClubMember::Table, ClubMember::ClubId)
+                        .to(Club::Table, Club::ClubId)
+                        .on_delete(ForeignKeyAction::Cascade),
+                )
                 .to_owned(),
         )
         .await
@@ -179,6 +202,12 @@ async fn drop_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
         .await
 }
 
+async fn drop_club_member_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+    manager
+        .drop_table(Table::drop().table(ClubMember::Table).to_owned())
+        .await
+}
+
 async fn drop_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     manager
         .drop_table(Table::drop().table(Session::Table).to_owned())
@@ -201,7 +230,6 @@ async fn drop_skill_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
 enum User {
     Table,
     UserId,
-    ClubId,
     NameFirst,
     NameLast,
     Email,
@@ -221,6 +249,14 @@ enum Club {
     Table,
     ClubId,
     Name,
+}
+
+#[derive(DeriveIden)]
+enum ClubMember {
+    Table,
+    ClubMemberId,
+    UserId,
+    ClubId,
 }
 
 #[derive(DeriveIden)]

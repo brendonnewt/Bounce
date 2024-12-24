@@ -3,6 +3,7 @@
 pub mod prelude;
 
 pub mod club;
+pub mod club_member;
 pub mod session;
 pub mod skill;
 pub mod turn;
