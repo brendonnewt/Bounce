@@ -1,5 +1,7 @@
 use actix_web::web;
-use sea_orm::{ActiveModelTrait, EntityTrait, IntoActiveModel, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter, Set,
+};
 
 use crate::{
     entities,
@@ -39,4 +41,24 @@ pub async fn update_user(
         .map_err(|err| ApiResponse::new(500, err.to_string()))?;
 
     Ok(ApiResponse::new(200, "User updated!".to_string()))
+}
+
+pub async fn get_user(
+    app_state: web::Data<app_state::AppState>,
+    claim_data: Claims,
+    filters: Option<Condition>,
+) -> Option<entities::user::Model> {
+    let mut query = entities::user::Entity::find();
+
+    if let Some(filter) = filters {
+        query = query.filter(filter);
+    } else {
+        query = query.filter(entities::user::Column::UserId.eq(claim_data.user_id));
+    }
+
+    match query.one(&app_state.db).await {
+        Ok(Some(user)) => Some(user),
+        Ok(None) => None,
+        Err(_) => None,
+    }
 }

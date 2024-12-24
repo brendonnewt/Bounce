@@ -3,6 +3,7 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter
 
 use crate::{
     entities,
+    routes::services::user_service,
     utils::{
         api_response::ApiResponse, app_state, jwt::Claims,
         request_models::club_models::CreateClubModel,
@@ -40,20 +41,25 @@ pub async fn create_club(
     claim_data: Claims,
     json: web::Json<CreateClubModel>,
 ) -> Result<ApiResponse, ApiResponse> {
-    // Ensure the user trying to make a club is a coach
-    let coach = entities::user::Entity::find()
-        .filter(
-            Condition::all()
-                .add(entities::user::Column::Email.eq(claim_data.email))
-                .add(entities::user::Column::UserType.eq("A".to_string())),
-        )
-        .one(&app_state.db)
-        .await
-        .map_err(|err| ApiResponse::new(500, err.to_string()))?
-        .ok_or(ApiResponse::new(
+    // Ensure user trying to make club is a coach
+    let filters = Some(
+        Condition::all()
+            .add(entities::user::Column::Email.eq(claim_data.email.clone()))
+            .add(entities::user::Column::UserType.eq("C".to_string())),
+    );
+
+    let coach;
+
+    if let Some(found_coach) =
+        user_service::get_user(app_state.clone(), claim_data.clone(), filters).await
+    {
+        coach = found_coach;
+    } else {
+        return Err(ApiResponse::new(
             404,
-            "No coach account found for user".to_string(),
-        ))?;
+            "Coach account could not be found for that email".to_string(),
+        ));
+    }
 
     // Check if the coach is already a member of a club
     if let Some(_) = entities::club_member::Entity::find()
@@ -89,7 +95,7 @@ pub async fn create_club(
 
     // Associate the coach with the club
     let coach_membership = entities::club_member::ActiveModel {
-        club_member_id: Set(coach.user_id),
+        user_id: Set(coach.user_id),
         club_id: Set(club_model.club_id),
         ..Default::default()
     }

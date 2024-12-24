@@ -3,6 +3,7 @@ pub mod middleware;
 pub mod services;
 
 pub mod auth_routes;
+pub mod club_routes;
 pub mod user_routes;
 
 use actix_web::web;
@@ -11,4 +12,5 @@ use actix_web::web;
 pub fn config(config: &mut web::ServiceConfig) {
     user_routes::config(config);
     auth_routes::config(config);
+    club_routes::config(config);
 }
