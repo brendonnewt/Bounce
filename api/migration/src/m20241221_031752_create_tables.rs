@@ -6,8 +6,8 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        create_club_table(manager).await?;
         create_user_table(manager).await?;
+        create_club_table(manager).await?;
         create_club_member_table(manager).await?;
         create_session_table(manager).await?;
         create_turn_table(manager).await?;
@@ -18,8 +18,8 @@ impl MigrationTrait for Migration {
         drop_skill_table(manager).await?;
         drop_turn_table(manager).await?;
         drop_session_table(manager).await?;
-        drop_user_table(manager).await?;
         drop_club_table(manager).await?;
+        drop_user_table(manager).await?;
         drop_club_member_table(manager).await
     }
 }
@@ -28,19 +28,6 @@ impl MigrationName for Migration {
     fn name(&self) -> &str {
         "m20241221_031752_create_tables"
     }
-}
-
-async fn create_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
-    manager
-        .create_table(
-            Table::create()
-                .table(Club::Table)
-                .if_not_exists()
-                .col(pk_auto(Club::ClubId))
-                .col(string(Club::Name))
-                .to_owned(),
-        )
-        .await
 }
 
 async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
@@ -58,6 +45,27 @@ async fn create_user_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                     ColumnDef::new(User::UserType)
                         .enumeration(UserType::Table, vec![UserType::Coach, UserType::Athlete])
                         .not_null(),
+                )
+                .to_owned(),
+        )
+        .await
+}
+
+async fn create_club_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
+    manager
+        .create_table(
+            Table::create()
+                .table(Club::Table)
+                .if_not_exists()
+                .col(pk_auto(Club::ClubId))
+                .col(string(Club::Name))
+                .col(integer(Club::OwnerId))
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("fk-club-user_id")
+                        .from(Club::Table, Club::OwnerId)
+                        .to(User::Table, User::UserId)
+                        .on_delete(ForeignKeyAction::SetNull),
                 )
                 .to_owned(),
         )
@@ -248,6 +256,7 @@ enum UserType {
 enum Club {
     Table,
     ClubId,
+    OwnerId,
     Name,
 }
 
