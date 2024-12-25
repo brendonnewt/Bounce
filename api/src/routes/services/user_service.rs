@@ -47,18 +47,23 @@ pub async fn get_user(
     app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
     filters: Option<Condition>,
-) -> Option<entities::user::Model> {
+) -> Result<entities::user::Model, ApiResponse> {
+    // Init query
     let mut query = entities::user::Entity::find();
 
+    // Apply filters, or default to finding by id
     if let Some(filter) = filters {
         query = query.filter(filter);
     } else {
         query = query.filter(entities::user::Column::UserId.eq(claim_data.user_id));
     }
 
-    match query.one(&app_state.db).await {
-        Ok(Some(user)) => Some(user),
-        Ok(None) => None,
-        Err(_) => None,
-    }
+    // Find the user
+    let user = query
+        .one(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?
+        .ok_or(ApiResponse::new(404, "User not found".to_string()))?;
+
+    Ok(user)
 }

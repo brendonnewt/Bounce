@@ -3,14 +3,12 @@ use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter
 
 use crate::{
     entities,
-    routes::services::user_service,
+    routes::services::{club_member_service, user_service},
     utils::{
         api_response::ApiResponse, app_state, jwt::Claims,
         request_models::club_models::CreateClubModel,
     },
 };
-
-use super::club_member_services;
 
 pub async fn get_user_club(
     app_state: web::Data<app_state::AppState>,
@@ -50,21 +48,22 @@ pub async fn create_club(
             .add(entities::user::Column::UserType.eq("C".to_string())),
     );
 
-    let coach;
+    // Search for a coach result with the current user_id
+    let coach_result = user_service::get_user(&app_state, claim_data.clone(), filters).await;
 
-    if let Some(found_coach) = user_service::get_user(&app_state, claim_data.clone(), filters).await
-    {
-        coach = found_coach;
-    } else {
-        return Err(ApiResponse::new(
-            404,
-            "Coach account could not be found for that email".to_string(),
-        ));
+    // Error handling/formatting result
+    if coach_result.is_err() {
+        return Err(coach_result.unwrap_err());
     }
+    let coach = coach_result.unwrap();
 
     // Check if the coach is already a member of a club
-    if let Some(_) = club_member_services::get_club_member(&app_state, claim_data, None).await {
-        return Err(ApiResponse::new(409, "Users cannot be part of two clubs at once. Please leave the club the account is registered for before creating a new one".to_string()));
+    if let Ok(_) = club_member_service::get_club_member(&app_state, claim_data.clone(), None).await
+    {
+        return Err(ApiResponse::new(
+            409,
+            "Users cannot be part of two clubs at once".to_string(),
+        ));
     }
 
     // Check if the club already exists
@@ -90,21 +89,23 @@ pub async fn create_club(
     .await
     .map_err(|err| ApiResponse::new(500, err.to_string()))?;
 
-    // Associate the coach with the club
-    let coach_membership = entities::club_member::ActiveModel {
-        user_id: Set(coach.user_id),
-        club_id: Set(club_model.club_id),
-        ..Default::default()
-    }
-    .insert(&app_state.db)
-    .await
-    .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+    // Create the membership
+    let membership_result =
+        club_member_service::create_membership(&app_state, claim_data.clone(), club_model.club_id)
+            .await;
 
-    Ok(ApiResponse::new(
-        200,
-        format!(
-            "{{ 'member_id': {}, 'club_id': {}, 'name': {} }}",
-            coach_membership.club_member_id, club_model.club_id, club_model.name
-        ),
-    ))
+    // Return the created membership, or the error if something went wrong
+    if membership_result.is_ok() {
+        return Ok(ApiResponse::new(
+            200,
+            format!(
+                "{{ 'member_id': {}, 'club_id': {}, 'name': {} }}",
+                membership_result.unwrap().club_member_id,
+                club_model.club_id,
+                club_model.name
+            ),
+        ));
+    } else {
+        return Err(membership_result.unwrap_err());
+    }
 }
