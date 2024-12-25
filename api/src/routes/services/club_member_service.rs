@@ -1,12 +1,14 @@
 use actix_web::web;
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter, Set,
+};
 
 use crate::{
     entities,
     utils::{api_response::ApiResponse, app_state, jwt::Claims},
 };
 
-use super::club_service::get_club;
+use super::club_service::get_user_club;
 
 pub async fn get_club_member(
     app_state: &web::Data<app_state::AppState>,
@@ -78,12 +80,27 @@ pub async fn leave_club(
         .add(entities::club::Column::ClubId.eq(membership.club_id))
         .add(entities::club::Column::OwnerId.eq(membership.user_id));
 
-    if let Ok(_) = get_club(app_state, claim_data.clone(), Some(filters)).await {
+    let search_result = get_user_club(app_state, claim_data.clone(), Some(filters)).await;
+
+    // Error handling/formatting
+    if search_result.is_ok() {
         return Err(ApiResponse::new(
             409,
             "User cannot leave the club they are the owner of".to_string(),
         ));
     }
+    let membership = membership.into_active_model();
 
-    Ok(ApiResponse::new(200, "Successfully left club".to_string()))
+    // Delete the membership
+    let delete_result = membership
+        .delete(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+
+    // Evaluate the result
+    if delete_result.rows_affected == 1 {
+        return Ok(ApiResponse::new(200, "Successfully left club".to_string()));
+    } else {
+        return Err(ApiResponse::new(500, "Could not leave club".to_string()));
+    }
 }

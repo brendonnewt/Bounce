@@ -5,16 +5,34 @@ use crate::{
     entities,
     routes::services::{club_member_service, user_service},
     utils::{
-        api_response::ApiResponse, app_state, jwt::Claims,
-        request_models::club_models::CreateClubModel,
+        api_response::ApiResponse, app_state, jwt::Claims, request_models::club_models::ClubModel,
     },
 };
 
-pub async fn get_club(
+pub async fn get_club_by_name(
+    app_state: &web::Data<app_state::AppState>,
+    name: String,
+) -> Result<entities::club::Model, ApiResponse> {
+    let query = entities::club::Entity::find()
+        .filter(Condition::all().add(entities::club::Column::Name.eq(name)));
+
+    let club = query
+        .one(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?
+        .ok_or(ApiResponse::new(
+            404,
+            "No club found with that name".to_string(),
+        ))?;
+
+    Ok(club)
+}
+
+pub async fn get_user_club(
     app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
     filters: Option<Condition>,
-) -> Result<ApiResponse, ApiResponse> {
+) -> Result<entities::club::Model, ApiResponse> {
     let mut query = entities::club_member::Entity::find();
 
     if let Some(filters) = filters {
@@ -31,25 +49,19 @@ pub async fn get_club(
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
         .ok_or(ApiResponse::new(404, "No club found for user".to_string()))?;
 
-    let club = entities::club::Entity::find_by_id(membership.club_id)
+    let result = entities::club::Entity::find_by_id(membership.club_id)
         .one(&app_state.db)
         .await
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
         .ok_or(ApiResponse::new(404, "Club not found".to_string()))?;
 
-    Ok(ApiResponse::new(
-        200,
-        format!(
-            "{{ 'user_id': {}, 'club_id': {}, 'name': {} }}",
-            claim_data.user_id, club.club_id, club.name
-        ),
-    ))
+    Ok(result)
 }
 
 pub async fn create_club(
     app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
-    json: web::Json<CreateClubModel>,
+    json: web::Json<ClubModel>,
 ) -> Result<ApiResponse, ApiResponse> {
     // Ensure user trying to make club is a coach
     let filters = Some(
