@@ -12,7 +12,7 @@ use crate::utils::{
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 
 pub async fn register(
-    app_state: web::Data<app_state::AppState>,
+    app_state: &web::Data<app_state::AppState>,
     json: web::Json<RegisterModel>,
 ) -> Result<ApiResponse, ApiResponse> {
     // Make sure user type is valid
@@ -58,7 +58,7 @@ pub async fn register(
 }
 
 pub async fn login_user(
-    app_state: web::Data<app_state::AppState>,
+    app_state: &web::Data<app_state::AppState>,
     json: web::Json<LoginModel>,
 ) -> Result<ApiResponse, ApiResponse> {
     // Get the user

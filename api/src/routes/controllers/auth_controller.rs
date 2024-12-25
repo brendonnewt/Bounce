@@ -14,7 +14,7 @@ pub async fn register_athlete(
     app_state: web::Data<app_state::AppState>,
     json: web::Json<RegisterModel>,
 ) -> Result<ApiResponse, ApiResponse> {
-    auth_service::register(app_state, json).await
+    auth_service::register(&app_state, json).await
 }
 
 #[post("login")]
@@ -22,5 +22,5 @@ pub async fn login(
     app_state: web::Data<app_state::AppState>,
     json: web::Json<LoginModel>,
 ) -> Result<ApiResponse, ApiResponse> {
-    auth_service::login_user(app_state, json).await
+    auth_service::login_user(&app_state, json).await
 }

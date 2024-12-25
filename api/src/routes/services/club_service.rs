@@ -10,12 +10,22 @@ use crate::{
     },
 };
 
-pub async fn get_user_club(
-    app_state: web::Data<app_state::AppState>,
+pub async fn get_club(
+    app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
+    filters: Option<Condition>,
 ) -> Result<ApiResponse, ApiResponse> {
-    let membership = entities::club_member::Entity::find()
-        .filter(Condition::all().add(entities::club_member::Column::UserId.eq(claim_data.user_id)))
+    let mut query = entities::club_member::Entity::find();
+
+    if let Some(filters) = filters {
+        query = query.filter(filters);
+    } else {
+        query = query.filter(
+            Condition::all().add(entities::club_member::Column::UserId.eq(claim_data.user_id)),
+        );
+    }
+
+    let membership = query
         .one(&app_state.db)
         .await
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
@@ -37,7 +47,7 @@ pub async fn get_user_club(
 }
 
 pub async fn create_club(
-    app_state: web::Data<app_state::AppState>,
+    app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
     json: web::Json<CreateClubModel>,
 ) -> Result<ApiResponse, ApiResponse> {

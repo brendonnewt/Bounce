@@ -12,7 +12,7 @@ use crate::{
 };
 
 pub async fn update_user(
-    app_state: web::Data<app_state::AppState>,
+    app_state: &web::Data<app_state::AppState>,
     user_data: web::Json<UpdateUserModel>,
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {

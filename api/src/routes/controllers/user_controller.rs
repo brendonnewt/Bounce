@@ -36,5 +36,5 @@ pub async fn update(
     user_data: web::Json<UpdateUserModel>,
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {
-    user_service::update_user(app_state, user_data, claim_data).await
+    user_service::update_user(&app_state, user_data, claim_data).await
 }

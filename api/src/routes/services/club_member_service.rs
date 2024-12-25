@@ -6,6 +6,8 @@ use crate::{
     utils::{api_response::ApiResponse, app_state, jwt::Claims},
 };
 
+use super::club_service::get_club;
+
 pub async fn get_club_member(
     app_state: &web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -58,9 +60,30 @@ pub async fn create_membership(
     }
 }
 
-// pub async fn join_club(
-//     app_state: &web::Data<app_state::AppState>,
-//     claim_data: Claims,
-//     club_id: i32,
-// ) -> Option<entities::club_member::Model> {
-// }
+pub async fn leave_club(
+    app_state: &web::Data<app_state::AppState>,
+    claim_data: Claims,
+) -> Result<ApiResponse, ApiResponse> {
+    // Ensure user is a member of a club
+    let member_result = get_club_member(app_state, claim_data.clone(), None).await;
+
+    if member_result.is_err() {
+        return Err(member_result.unwrap_err());
+    }
+
+    let membership = member_result.unwrap();
+
+    // See if the user is the owner of the club
+    let filters = Condition::all()
+        .add(entities::club::Column::ClubId.eq(membership.club_id))
+        .add(entities::club::Column::OwnerId.eq(membership.user_id));
+
+    if let Ok(_) = get_club(app_state, claim_data.clone(), Some(filters)).await {
+        return Err(ApiResponse::new(
+            409,
+            "User cannot leave the club they are the owner of".to_string(),
+        ));
+    }
+
+    Ok(ApiResponse::new(200, "Successfully left club".to_string()))
+}
