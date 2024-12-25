@@ -1,5 +1,7 @@
 use actix_web::web;
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter, Set,
+};
 
 use crate::{
     entities,
@@ -13,9 +15,11 @@ pub async fn get_club_by_name(
     app_state: &web::Data<app_state::AppState>,
     name: String,
 ) -> Result<entities::club::Model, ApiResponse> {
+    // Search for clubs matching the input name
     let query = entities::club::Entity::find()
         .filter(Condition::all().add(entities::club::Column::Name.eq(name)));
 
+    // Get the club
     let club = query
         .one(&app_state.db)
         .await
@@ -33,8 +37,10 @@ pub async fn get_user_club(
     claim_data: Claims,
     filters: Option<Condition>,
 ) -> Result<entities::club::Model, ApiResponse> {
+    // Create query to search for users club
     let mut query = entities::club_member::Entity::find();
 
+    // Default to just a normal search if no filters are provided
     if let Some(filters) = filters {
         query = query.filter(filters);
     } else {
@@ -43,12 +49,14 @@ pub async fn get_user_club(
         );
     }
 
+    // Get membership
     let membership = query
         .one(&app_state.db)
         .await
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
         .ok_or(ApiResponse::new(404, "No club found for user".to_string()))?;
 
+    // Get club from membership
     let result = entities::club::Entity::find_by_id(membership.club_id)
         .one(&app_state.db)
         .await
@@ -137,4 +145,61 @@ pub async fn create_club(
     } else {
         return Err(membership_result.unwrap_err());
     }
+}
+
+pub async fn delete_club(
+    app_state: &web::Data<app_state::AppState>,
+    claim_data: Claims,
+) -> Result<ApiResponse, ApiResponse> {
+    let club = get_user_club(&app_state, claim_data.clone(), None).await;
+
+    // Error handling/formatting
+    if club.is_err() {
+        return Err(club.unwrap_err());
+    }
+    let club = club.unwrap();
+
+    // Make sure the user deleting is the owner
+    if club.owner_id != claim_data.user_id {
+        return Err(ApiResponse::new(
+            401,
+            "User cannot delete a club if they are not the owner".to_string(),
+        ));
+    }
+
+    // Delete the club
+    let deleted_rows = club
+        .into_active_model()
+        .delete(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+
+    // Validate deletion
+    if deleted_rows.rows_affected == 1 {
+        return Ok(ApiResponse::new(
+            200,
+            "Club deleted successfully".to_string(),
+        ));
+    } else {
+        return Err(ApiResponse::new(
+            500,
+            "Internal server error: Club could not be deleted".to_string(),
+        ));
+    }
+}
+
+pub async fn is_owner(
+    app_state: &web::Data<app_state::AppState>,
+    claim_data: Claims,
+) -> Result<bool, ApiResponse> {
+    let club = get_user_club(&app_state, claim_data.clone(), None).await;
+
+    // Error handling/formatting
+    if club.is_err() {
+        return Err(club.unwrap_err());
+    }
+    let club = club.unwrap();
+
+    // Make sure the user deleting is the owner
+    Ok(club.owner_id == claim_data.user_id)
 }

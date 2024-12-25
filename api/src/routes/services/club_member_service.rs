@@ -8,7 +8,7 @@ use crate::{
     utils::{api_response::ApiResponse, app_state, jwt::Claims},
 };
 
-use super::club_service::get_user_club;
+use super::club_service;
 
 pub async fn get_club_member(
     app_state: &web::Data<app_state::AppState>,
@@ -75,23 +75,20 @@ pub async fn leave_club(
 
     let membership = member_result.unwrap();
 
-    // See if the user is the owner of the club
-    let filters = Condition::all()
-        .add(entities::club_member::Column::ClubId.eq(membership.club_id))
-        .add(entities::club_member::Column::UserId.eq(membership.user_id));
-
-    let search_result = get_user_club(app_state, claim_data.clone(), Some(filters)).await;
-
-    // Error handling/formatting
-    if search_result.is_err() {
-        return Err(search_result.unwrap_err());
+    // Check if user is the owner
+    let result = club_service::is_owner(&app_state, claim_data.clone()).await;
+    if result.is_err() {
+        return Err(result.unwrap_err());
     }
-    if search_result.unwrap().owner_id == claim_data.user_id {
+
+    // Reject if they are the owner
+    if result.unwrap() {
         return Err(ApiResponse::new(
             409,
             "User cannot leave the club if they are the owner".to_string(),
         ));
     }
+
     let membership = membership.into_active_model();
 
     // Delete the membership

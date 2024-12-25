@@ -1,4 +1,4 @@
-use actix_web::{get, post, web};
+use actix_web::{delete, get, post, web};
 
 use crate::{
     routes::services::{club_member_service, club_service},
@@ -77,4 +77,12 @@ pub async fn join_club(
             membership.club_member_id, membership.user_id, membership.club_id
         ),
     ));
+}
+
+#[delete("")]
+pub async fn delete_club(
+    app_state: web::Data<app_state::AppState>,
+    claim_data: Claims,
+) -> Result<ApiResponse, ApiResponse> {
+    club_service::delete_club(&app_state, claim_data).await
 }
