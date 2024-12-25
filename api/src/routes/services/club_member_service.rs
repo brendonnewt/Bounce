@@ -77,16 +77,19 @@ pub async fn leave_club(
 
     // See if the user is the owner of the club
     let filters = Condition::all()
-        .add(entities::club::Column::ClubId.eq(membership.club_id))
-        .add(entities::club::Column::OwnerId.eq(membership.user_id));
+        .add(entities::club_member::Column::ClubId.eq(membership.club_id))
+        .add(entities::club_member::Column::UserId.eq(membership.user_id));
 
     let search_result = get_user_club(app_state, claim_data.clone(), Some(filters)).await;
 
     // Error handling/formatting
-    if search_result.is_ok() {
+    if search_result.is_err() {
+        return Err(search_result.unwrap_err());
+    }
+    if search_result.unwrap().owner_id == claim_data.user_id {
         return Err(ApiResponse::new(
             409,
-            "User cannot leave the club they are the owner of".to_string(),
+            "User cannot leave the club if they are the owner".to_string(),
         ));
     }
     let membership = membership.into_active_model();
