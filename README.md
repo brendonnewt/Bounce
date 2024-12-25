@@ -21,3 +21,14 @@ Once the environment variables have been configured, migrate the database with
 ```
 
 This will create the necessary tables in the database specified in $DATABASE_URL
+
+### Running the App
+
+After setting up the env file and migrating the database, you can start the actix web server by
+running the following command from the api directory
+
+```bash
+    cargo run
+```
+
+This will start the server on the port and host specified in the .env file
