@@ -67,3 +67,18 @@ pub async fn get_user(
 
     Ok(user)
 }
+
+pub async fn get_user_by_id(
+    app_state: &web::Data<app_state::AppState>,
+    user_id: i32,
+) -> Result<entities::user::Model, ApiResponse> {
+    let user_model = entities::user::Entity::find_by_id(user_id)
+        .one(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+
+    match user_model {
+        Some(user) => Ok(user),
+        None => Err(ApiResponse::new(404, "User not found".to_string())),
+    }
+}

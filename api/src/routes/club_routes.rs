@@ -9,6 +9,7 @@ pub fn config(config: &mut web::ServiceConfig) {
             .service(controllers::club_controller::create_club)
             .service(controllers::club_controller::leave_club)
             .service(controllers::club_controller::join_club)
-            .service(controllers::club_controller::delete_club),
+            .service(controllers::club_controller::delete_club)
+            .service(controllers::club_controller::transfer_ownership),
     );
 }

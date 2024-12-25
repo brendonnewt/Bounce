@@ -1,9 +1,12 @@
-use actix_web::{delete, get, post, web};
+use actix_web::{delete, get, post, put, web};
 
 use crate::{
     routes::services::{club_member_service, club_service},
     utils::{
-        api_response::ApiResponse, app_state, jwt::Claims, request_models::club_models::ClubModel,
+        api_response::ApiResponse,
+        app_state,
+        jwt::Claims,
+        request_models::club_models::{ClubModel, TransferOwnerModel},
     },
 };
 
@@ -34,7 +37,7 @@ pub async fn create_club(
     claim_data: Claims,
     json: web::Json<ClubModel>,
 ) -> Result<ApiResponse, ApiResponse> {
-    club_service::create_club(&app_state, claim_data, json).await
+    club_service::create_club(&app_state, claim_data, json.name.clone()).await
 }
 
 #[post("/leave")]
@@ -85,4 +88,14 @@ pub async fn delete_club(
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {
     club_service::delete_club(&app_state, claim_data).await
+}
+
+#[put("/transfer")]
+pub async fn transfer_ownership(
+    app_state: web::Data<app_state::AppState>,
+    claim_data: Claims,
+    json: web::Json<TransferOwnerModel>,
+) -> Result<ApiResponse, ApiResponse> {
+    let new_owner_id = json.new_owner_id;
+    club_service::transfer_ownership(&app_state, claim_data, new_owner_id).await
 }
