@@ -63,7 +63,14 @@ pub async fn create_club(
 
     // Error handling/formatting result
     if coach_result.is_err() {
-        return Err(coach_result.unwrap_err());
+        if coach_result.as_ref().unwrap_err().status_code == 404 {
+            return Err(ApiResponse::new(
+                404,
+                "Coach account not found for that email".to_string(),
+            ));
+        } else {
+            return Err(coach_result.unwrap_err());
+        }
     }
     let coach = coach_result.unwrap();
 
