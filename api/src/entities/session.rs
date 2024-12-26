@@ -12,6 +12,7 @@ pub struct Model {
     pub event_id: String,
     pub time_start: DateTime,
     pub time_end: DateTime,
+    pub summary: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -9,6 +9,7 @@ pub struct Model {
     pub turn_id: i32,
     pub session_id: i32,
     pub user_id: i32,
+    pub note: String,
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub event_id: String,
     #[sea_orm(column_type = "Float")]

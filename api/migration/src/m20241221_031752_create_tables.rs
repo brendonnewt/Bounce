@@ -115,6 +115,7 @@ async fn create_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> 
                 )
                 .col(date_time(Session::TimeStart))
                 .col(date_time(Session::TimeEnd))
+                .col(string(Session::Summary))
                 .foreign_key(
                     ForeignKey::create()
                         .name("fk-turn-user_id")
@@ -135,6 +136,7 @@ async fn create_turn_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                 .col(pk_auto(Turn::TurnId))
                 .col(integer(Turn::SessionId))
                 .col(integer(Turn::UserId))
+                .col(string(Turn::Note))
                 .col(
                     ColumnDef::new(Turn::EventId)
                         .enumeration(Event::Table, vec![Event::TRA, Event::DMT, Event::TUM])
@@ -276,6 +278,7 @@ enum Session {
     EventId,
     TimeStart,
     TimeEnd,
+    Summary,
 }
 
 #[derive(DeriveIden)]
@@ -286,6 +289,7 @@ enum Turn {
     UserId,
     EventId,
     TotalDifficulty,
+    Note,
 }
 
 #[derive(DeriveIden)]
