@@ -40,7 +40,7 @@ pub async fn create_club(
     club_service::create_club(&app_state, claim_data, json.name.clone()).await
 }
 
-#[post("/leave")]
+#[post("leave")]
 pub async fn leave_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -48,7 +48,7 @@ pub async fn leave_club(
     club_member_service::leave_club(&app_state, claim_data).await
 }
 
-#[post("/join")]
+#[post("join")]
 pub async fn join_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -90,7 +90,7 @@ pub async fn delete_club(
     club_service::delete_club(&app_state, claim_data).await
 }
 
-#[put("/transfer")]
+#[put("transfer")]
 pub async fn transfer_ownership(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,

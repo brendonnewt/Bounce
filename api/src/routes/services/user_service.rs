@@ -2,6 +2,7 @@ use actix_web::web;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter, Set,
 };
+use sha256::digest;
 
 use crate::{
     entities,
@@ -41,6 +42,42 @@ pub async fn update_user(
         .map_err(|err| ApiResponse::new(500, err.to_string()))?;
 
     Ok(ApiResponse::new(200, "User updated!".to_string()))
+}
+
+pub async fn reset_password(
+    app_state: &web::Data<app_state::AppState>,
+    claim_data: Claims,
+    old_pass: String,
+    new_pass: String,
+) -> Result<ApiResponse, ApiResponse> {
+    // Get user model
+    let user = get_user(&app_state, claim_data.clone(), None).await;
+
+    // Error handling/formatting
+    if user.is_err() {
+        return Err(user.unwrap_err());
+    }
+    let user = user.unwrap();
+
+    // Make sure old password is correct
+    if user.password != digest(old_pass) {
+        return Err(ApiResponse::new(401, "Password is incorrect".to_string()));
+    }
+
+    // Get the active model and set the password to the new one
+    let mut user = user.into_active_model();
+    user.password = Set(digest(new_pass.trim()));
+
+    // Update the password
+    user.update(&app_state.db)
+        .await
+        .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+
+    // Send yippee!
+    Ok(ApiResponse::new(
+        200,
+        "Password successfully changed".to_string(),
+    ))
 }
 
 pub async fn get_user(

@@ -1,12 +1,14 @@
-use actix_web::{get, post, web};
+use actix_web::{get, post, put, web};
 use sea_orm::EntityTrait;
 
 use crate::{
     entities,
     routes::services::user_service,
     utils::{
-        api_response::ApiResponse, app_state, jwt::Claims,
-        request_models::user_models::UpdateUserModel,
+        api_response::ApiResponse,
+        app_state,
+        jwt::Claims,
+        request_models::user_models::{UpdatePasswordModel, UpdateUserModel},
     },
 };
 
@@ -28,6 +30,17 @@ pub async fn user(
             user.user_id, user.user_type, user.name_first, user.name_last, user.email
         ),
     ))
+}
+
+#[put("reset-password")]
+pub async fn reset_password(
+    app_state: web::Data<app_state::AppState>,
+    claim_data: Claims,
+    json: web::Json<UpdatePasswordModel>,
+) -> Result<ApiResponse, ApiResponse> {
+    let old_pass = json.old_password.clone();
+    let new_pass = json.new_password.clone();
+    user_service::reset_password(&app_state, claim_data, old_pass, new_pass).await
 }
 
 #[post("update")]
