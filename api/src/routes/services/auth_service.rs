@@ -74,7 +74,7 @@ pub async fn login_user(
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
         .ok_or(ApiResponse::new(
             404,
-            "No user found for that username and password".to_string(),
+            "No user found for that email and password".to_string(),
         ))?;
 
     // Create the jwt token
