@@ -1,4 +1,4 @@
-use actix_web::{get, post, put, web};
+use actix_web::{get, post, web};
 use sea_orm::EntityTrait;
 
 use crate::{
@@ -32,7 +32,7 @@ pub async fn user(
     ))
 }
 
-#[put("reset-password")]
+#[post("reset-password")]
 pub async fn reset_password(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,

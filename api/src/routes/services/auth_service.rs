@@ -72,7 +72,10 @@ pub async fn login_user(
         .one(&app_state.db)
         .await
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
-        .ok_or(ApiResponse::new(404, "User not found".to_string()))?;
+        .ok_or(ApiResponse::new(
+            404,
+            "No user found for that username and password".to_string(),
+        ))?;
 
     // Create the jwt token
     let token = encode_jwt(user.email, user.user_id)
