@@ -24,8 +24,8 @@ pub async fn user(
     Ok(ApiResponse::new(
         200,
         format!(
-            "{{ 'nameFirst': {}, 'nameLast': {}, 'email': {} }}",
-            user.name_first, user.name_last, user.email
+            "{{ 'user_id': {}, 'user_type': {}, 'name_first': {}, 'name_last': {}, 'email': {} }}",
+            user.user_id, user.user_type, user.name_first, user.name_last, user.email
         ),
     ))
 }
