@@ -173,7 +173,16 @@ async fn create_skill_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
                         .enumeration(Event::Table, vec![Event::TRA, Event::DMT, Event::TUM])
                         .not_null(),
                 )
+                .col(integer(Skill::SkillNum))
                 .col(integer(Skill::FigRep))
+                .col(
+                    ColumnDef::new(Skill::Direction)
+                        .enumeration(
+                            Direction::Table,
+                            vec![Direction::FORWARD, Direction::BACKWARD, Direction::NONE],
+                        )
+                        .not_null(),
+                )
                 .col(
                     ColumnDef::new(Skill::Position)
                         .enumeration(
@@ -298,9 +307,19 @@ enum Skill {
     SkillId,
     TurnId,
     EventId,
+    SkillNum,
     FigRep,
+    Direction,
     Position,
     Difficulty,
+}
+
+#[derive(DeriveIden)]
+enum Direction {
+    Table,
+    FORWARD,
+    BACKWARD,
+    NONE,
 }
 
 #[derive(DeriveIden)]

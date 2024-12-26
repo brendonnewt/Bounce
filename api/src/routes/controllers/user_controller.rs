@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[get("")]
-pub async fn user(
+pub async fn get_user(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {

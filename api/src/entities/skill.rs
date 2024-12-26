@@ -10,7 +10,10 @@ pub struct Model {
     pub turn_id: i32,
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub event_id: String,
+    pub skill_num: i32,
     pub fig_rep: i32,
+    #[sea_orm(column_type = "custom(\"enum_text\")")]
+    pub direction: String,
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub position: String,
     #[sea_orm(column_type = "Float")]

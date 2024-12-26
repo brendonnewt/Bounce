@@ -99,3 +99,22 @@ pub async fn transfer_ownership(
     let new_owner_id = json.new_owner_id;
     club_service::transfer_ownership(&app_state, claim_data, new_owner_id).await
 }
+
+// TODO: Get a list of all athletes in the users club
+// #[get("athletes")]
+// pub async fn get_club_athletes(
+//     app_state: web::Data<app_state::AppState>,
+//     claim_data: Claims,
+// ) -> Result<ApiResponse, ApiResponse> {
+//     let new_owner_id = json.new_owner_id;
+//     club_service::get_club_athletes(&app_state, claim_data).await
+// }
+
+// TODO: Get a list of all members in the users club
+// #[get("club-members")]
+// pub async fn get_club_members(
+//     app_state: web::Data<app_state::AppState>,
+//     claim_data: Claims,
+// ) -> Result<ApiResponse, ApiResponse> {
+//     club_service::get_club_members(&app_state, claim_data).await
+// }
