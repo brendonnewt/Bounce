@@ -11,7 +11,6 @@ pub struct Model {
     #[sea_orm(column_type = "custom(\"enum_text\")")]
     pub event_id: String,
     pub time_start: DateTime,
-    pub time_end: DateTime,
     pub summary: String,
 }
 

@@ -114,7 +114,6 @@ async fn create_session_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> 
                         .not_null(),
                 )
                 .col(date_time(Session::TimeStart))
-                .col(date_time(Session::TimeEnd))
                 .col(string(Session::Summary))
                 .foreign_key(
                     ForeignKey::create()
@@ -286,7 +285,6 @@ enum Session {
     UserId,
     EventId,
     TimeStart,
-    TimeEnd,
     Summary,
 }
 
