@@ -10,30 +10,34 @@ use crate::{
 
 use super::club_service;
 
-pub async fn get_club_member(
+pub async fn get_member_by_user_id(
     app_state: &web::Data<app_state::AppState>,
-    claim_data: Claims,
-    filters: Option<Condition>,
+    user_id: i32,
 ) -> Result<entities::club_member::Model, ApiResponse> {
-    let mut query = entities::club_member::Entity::find();
-
-    if let Some(filter) = filters {
-        query = query.filter(filter);
-    } else {
-        query = query.filter(entities::club_member::Column::UserId.eq(claim_data.user_id));
-    }
-
-    let result = query
+    // Get membership
+    let membership = entities::club_member::Entity::find()
+        .filter(Condition::all().add(entities::club_member::Column::UserId.eq(user_id)))
         .one(&app_state.db)
         .await
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
-        .ok_or(ApiResponse::new(
-            404,
-            "No club membership found".to_string(),
-        ))?;
+        .ok_or(ApiResponse::new(404, "No club found for user".to_string()))?;
 
-    return Ok(result);
+    Ok(membership)
 }
+
+// pub async fn get_members_by_club_id(
+//     app_state: &web::Data<app_state::AppState>,
+//     club_id: i32,
+// ) -> Result<Vec<entities::club_member::Model>, ApiResponse> {
+//     // Get membership
+//     let memberships = entities::club_member::Entity::find()
+//         .filter(Condition::all().add(entities::club_member::Column::ClubId.eq(club_id)))
+//         .all(&app_state.db)
+//         .await
+//         .map_err(|err| ApiResponse::new(500, err.to_string()))?;
+
+//     Ok(memberships)
+// }
 
 pub async fn create_membership(
     app_state: &web::Data<app_state::AppState>,
@@ -41,7 +45,7 @@ pub async fn create_membership(
     club_id: i32,
 ) -> Result<entities::club_member::Model, ApiResponse> {
     // Check if the user is a part of another club
-    if let Ok(_) = get_club_member(app_state, claim_data.clone(), None).await {
+    if let Ok(_) = get_member_by_user_id(app_state, claim_data.user_id).await {
         return Err(ApiResponse::new(
             409,
             "User is already a member of a club".to_string(),
@@ -67,7 +71,7 @@ pub async fn leave_club(
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {
     // Ensure user is a member of a club
-    let member_result = get_club_member(app_state, claim_data.clone(), None).await;
+    let member_result = get_member_by_user_id(app_state, claim_data.user_id).await;
 
     if member_result.is_err() {
         return Err(member_result.unwrap_err());
@@ -76,7 +80,7 @@ pub async fn leave_club(
     let membership = member_result.unwrap();
 
     // Check if user is the owner
-    let result = club_service::is_owner(&app_state, claim_data.clone()).await;
+    let result = club_service::is_owner(&app_state, claim_data.user_id, membership.club_id).await;
     if result.is_err() {
         return Err(result.unwrap_err());
     }

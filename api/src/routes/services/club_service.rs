@@ -9,15 +9,36 @@ use crate::{
     utils::{api_response::ApiResponse, app_state, jwt::Claims},
 };
 
-use super::user_service::get_user_by_id;
+use super::{club_member_service::get_member_by_user_id, user_service::get_user_by_id};
 
-pub async fn get_club_by_name(
+// pub async fn get_club_by_name(
+//     app_state: &web::Data<app_state::AppState>,
+//     name: String,
+// ) -> Result<entities::club::Model, ApiResponse> {
+//     // Search for clubs matching the input name
+//     let query = entities::club::Entity::find()
+//         .filter(Condition::all().add(entities::club::Column::Name.eq(name)));
+
+//     // Get the club
+//     let club = query
+//         .one(&app_state.db)
+//         .await
+//         .map_err(|err| ApiResponse::new(500, err.to_string()))?
+//         .ok_or(ApiResponse::new(
+//             404,
+//             "No club found with that name".to_string(),
+//         ))?;
+
+//     Ok(club)
+// }
+
+pub async fn get_club_by_id(
     app_state: &web::Data<app_state::AppState>,
-    name: String,
+    club_id: i32,
 ) -> Result<entities::club::Model, ApiResponse> {
     // Search for clubs matching the input name
     let query = entities::club::Entity::find()
-        .filter(Condition::all().add(entities::club::Column::Name.eq(name)));
+        .filter(Condition::all().add(entities::club::Column::ClubId.eq(club_id)));
 
     // Get the club
     let club = query
@@ -26,44 +47,10 @@ pub async fn get_club_by_name(
         .map_err(|err| ApiResponse::new(500, err.to_string()))?
         .ok_or(ApiResponse::new(
             404,
-            "No club found with that name".to_string(),
+            "No club found with that club_id".to_string(),
         ))?;
 
     Ok(club)
-}
-
-pub async fn get_user_club(
-    app_state: &web::Data<app_state::AppState>,
-    claim_data: Claims,
-    filters: Option<Condition>,
-) -> Result<entities::club::Model, ApiResponse> {
-    // Create query to search for users club
-    let mut query = entities::club_member::Entity::find();
-
-    // Default to just a normal search if no filters are provided
-    if let Some(filters) = filters {
-        query = query.filter(filters);
-    } else {
-        query = query.filter(
-            Condition::all().add(entities::club_member::Column::UserId.eq(claim_data.user_id)),
-        );
-    }
-
-    // Get membership
-    let membership = query
-        .one(&app_state.db)
-        .await
-        .map_err(|err| ApiResponse::new(500, err.to_string()))?
-        .ok_or(ApiResponse::new(404, "No club found for user".to_string()))?;
-
-    // Get club from membership
-    let result = entities::club::Entity::find_by_id(membership.club_id)
-        .one(&app_state.db)
-        .await
-        .map_err(|err| ApiResponse::new(500, err.to_string()))?
-        .ok_or(ApiResponse::new(404, "Club not found".to_string()))?;
-
-    Ok(result)
 }
 
 pub async fn create_club(
@@ -95,7 +82,7 @@ pub async fn create_club(
     let coach = coach_result.unwrap();
 
     // Check if the coach is already a member of a club
-    if let Ok(_) = club_member_service::get_club_member(&app_state, claim_data.clone(), None).await
+    if let Ok(_) = club_member_service::get_member_by_user_id(&app_state, claim_data.user_id).await
     {
         return Err(ApiResponse::new(
             409,
@@ -152,7 +139,7 @@ pub async fn delete_club(
     claim_data: Claims,
 ) -> Result<ApiResponse, ApiResponse> {
     // Check if user deleting is the club owner
-    let club = get_club_if_owner(&app_state, claim_data.clone()).await;
+    let club = get_club_if_owner(&app_state, claim_data.user_id).await;
 
     if club.is_err() {
         return Err(club.unwrap_err());
@@ -199,7 +186,7 @@ pub async fn transfer_ownership(
     }
 
     // Check that user owns the club
-    let club = get_club_if_owner(&app_state, claim_data.clone()).await;
+    let club = get_club_if_owner(&app_state, claim_data.user_id).await;
 
     // Error handling/formatting
     if club.is_err() {
@@ -207,17 +194,20 @@ pub async fn transfer_ownership(
     }
     let club = club.unwrap();
 
-    // Create filters to find the new owners membership with the club
-    let filters = Condition::all()
-        .add(entities::club_member::Column::ClubId.eq(club.club_id))
-        .add(entities::club_member::Column::UserId.eq(new_owner_id));
+    // Ensure the new owner is a coach in the club
+    let new_owner_membership = get_member_by_user_id(&app_state, new_owner_id).await;
 
-    // Get the membership
-    let new_owner_membership = get_user_club(&app_state, claim_data.clone(), Some(filters)).await;
-
-    // Handle if they are not a member/format if they are
+    // Handle if they are not a member of any club
     if new_owner_membership.is_err() {
         return Err(new_owner_membership.unwrap_err());
+    }
+
+    // Handle if they are not a member of the club
+    if new_owner_membership.unwrap().club_id != club.club_id {
+        return Err(ApiResponse::new(
+            403,
+            "The new owner is not a member of the club".to_string(),
+        ));
     }
 
     // Retrieve the model and set the owner_id to the new_owner
@@ -238,9 +228,10 @@ pub async fn transfer_ownership(
 
 pub async fn is_owner(
     app_state: &web::Data<app_state::AppState>,
-    claim_data: Claims,
+    user_id: i32,
+    club_id: i32,
 ) -> Result<bool, ApiResponse> {
-    let club = get_user_club(&app_state, claim_data.clone(), None).await;
+    let club = get_club_by_id(&app_state, club_id).await;
 
     // Error handling/formatting
     if club.is_err() {
@@ -249,14 +240,23 @@ pub async fn is_owner(
     let club = club.unwrap();
 
     // Make sure the user deleting is the owner
-    Ok(club.owner_id == claim_data.user_id)
+    Ok(club.owner_id == user_id)
 }
 
 pub async fn get_club_if_owner(
     app_state: &web::Data<app_state::AppState>,
-    claim_data: Claims,
+    user_id: i32,
 ) -> Result<entities::club::Model, ApiResponse> {
-    let club = get_user_club(&app_state, claim_data.clone(), None).await;
+    // Get the users membership
+    let membership = get_member_by_user_id(&app_state, user_id).await;
+
+    // Error handling/formatting
+    if membership.is_err() {
+        return Err(membership.unwrap_err());
+    }
+    let membership = membership.unwrap();
+
+    let club = get_club_by_id(&app_state, membership.club_id).await;
 
     // Error handling/formatting
     if club.is_err() {
@@ -265,7 +265,7 @@ pub async fn get_club_if_owner(
     let club = club.unwrap();
 
     // Make sure the user deleting is the owner
-    if club.owner_id == claim_data.user_id {
+    if club.owner_id == user_id {
         return Ok(club);
     } else {
         return Err(ApiResponse::new(

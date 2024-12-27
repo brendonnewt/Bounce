@@ -10,28 +10,29 @@ use crate::{
     },
 };
 
-#[get("")]
-pub async fn get_user_club(
+#[get("/{club_id}")]
+pub async fn get_club(
     app_state: web::Data<app_state::AppState>,
-    claim_data: Claims,
+    path: web::Path<i32>,
 ) -> Result<ApiResponse, ApiResponse> {
-    let search_result = club_service::get_user_club(&app_state, claim_data.clone(), None).await;
+    let club_id = path.into_inner();
+    let club = club_service::get_club_by_id(&app_state, club_id).await;
 
-    if search_result.is_err() {
-        return Err(search_result.unwrap_err());
+    if club.is_err() {
+        return Err(club.unwrap_err());
     }
-    let club = search_result.unwrap();
+    let club = club.unwrap();
 
     Ok(ApiResponse::new(
         200,
         format!(
-            "{{ 'user_id': {}, 'club_id': {}, 'name': {} }}",
-            claim_data.user_id, club.club_id, club.name
+            "{{ 'club_id': {}, 'name': {}, 'owner_id': {} }}",
+            club.club_id, club.name, club.owner_id
         ),
     ))
 }
 
-#[post("")]
+#[post("/create")]
 pub async fn create_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -40,7 +41,7 @@ pub async fn create_club(
     club_service::create_club(&app_state, claim_data, json.name.clone()).await
 }
 
-#[post("leave")]
+#[post("/{club_id}/leave")]
 pub async fn leave_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -48,14 +49,15 @@ pub async fn leave_club(
     club_member_service::leave_club(&app_state, claim_data).await
 }
 
-#[post("join")]
+#[post("/{club_id}/join")]
 pub async fn join_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
-    json: web::Json<ClubModel>,
+    path: web::Path<i32>,
 ) -> Result<ApiResponse, ApiResponse> {
+    let club_id = path.into_inner();
     // Get the club
-    let club_result = club_service::get_club_by_name(&app_state, json.name.clone()).await;
+    let club_result = club_service::get_club_by_id(&app_state, club_id).await;
 
     // Error handling and formatting
     if club_result.is_err() {
@@ -82,7 +84,7 @@ pub async fn join_club(
     ));
 }
 
-#[delete("")]
+#[delete("/delete")]
 pub async fn delete_club(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,
@@ -90,7 +92,7 @@ pub async fn delete_club(
     club_service::delete_club(&app_state, claim_data).await
 }
 
-#[put("transfer")]
+#[put("/transfer")]
 pub async fn transfer_ownership(
     app_state: web::Data<app_state::AppState>,
     claim_data: Claims,

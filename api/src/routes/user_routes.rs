@@ -6,6 +6,7 @@ pub fn config(config: &mut web::ServiceConfig) {
         web::scope("/user")
             .wrap(from_fn(middleware::auth_middleware::check_auth_middleware))
             .service(controllers::user_controller::get_user)
+            .service(controllers::user_controller::get_user_club)
             .service(controllers::user_controller::update)
             .service(controllers::user_controller::reset_password),
     );
